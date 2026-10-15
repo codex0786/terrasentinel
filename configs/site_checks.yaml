@@ -1,0 +1,11 @@
+# Data-quality guard for the public site (pipelines/check_site_data.py). A failed check blocks publishing,
+# so GitHub Pages keeps serving the previous good version.
+max_data_age_hours: 30          # latest satellite acquisition must be newer than this
+max_latest_day_lag_days: 1      # latest exported day must be today or yesterday (UTC)
+min_days_exported: 7            # the "past days" strip needs history
+baseline_days: 14               # completed days used as the recent baseline
+min_detection_ratio: 0.10       # latest completed day's detections >= 10% of the baseline median ...
+max_detection_ratio: 10.0       # ... and <= 10x (catches broken or duplicated data)
+min_baseline_detections: 50     # skip ratio checks when the baseline itself is tiny (e.g. monsoon lulls)
+max_today_gz_kb: 600            # keep the first page load small
+required_sensors: [VIIRS_SNPP_NRT, VIIRS_NOAA20_NRT]

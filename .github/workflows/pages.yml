@@ -1,6 +1,7 @@
 name: site
-# Daily data refresh + build + deploy of the public site to GitHub Pages.
+# Daily data refresh -> data-quality guard -> build -> deploy -> verify the live site -> alert on failure.
 # Needs: repository secret FIRMS_MAP_KEY; Settings -> Pages -> Source: "GitHub Actions".
+# If any step before deploy fails, nothing is published and Pages keeps serving the last good version.
 on:
   schedule:
     - cron: "30 6,18 * * *"     # twice daily (UTC), after the night and day VIIRS passes over India
@@ -13,6 +14,7 @@ permissions:
   contents: read
   pages: write
   id-token: write
+  issues: write
 
 concurrency:
   group: pages
@@ -22,6 +24,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    outputs:
+      generated_at: ${{ steps.meta.outputs.generated_at }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
@@ -37,6 +41,10 @@ jobs:
         run: python pipelines/live_update.py
       - name: Export static site data
         run: python pipelines/export_site_data.py
+      - name: Data-quality guard (blocks publishing on failure)
+        run: python pipelines/check_site_data.py
+      - id: meta
+        run: echo "generated_at=$(python -c "import json;print(json.load(open('site/public/data/meta.json'))['generated_at_utc'])")" >> "$GITHUB_OUTPUT"
       - uses: actions/setup-node@v5
         with:
           node-version: "22"
@@ -55,6 +63,41 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  verify:
+    needs: [build, deploy]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Live site serves this run's data
+        env:
+          URL: ${{ needs.deploy.outputs.page_url }}
+          EXPECT: ${{ needs.build.outputs.generated_at }}
+        run: |
+          for i in $(seq 1 10); do
+            got=$(curl -fsS "${URL}data/meta.json?nocache=$RANDOM" | python3 -c "import json,sys;print(json.load(sys.stdin)['generated_at_utc'])" || true)
+            status=$(curl -fsS "${URL}data/health.json?nocache=$RANDOM" | python3 -c "import json,sys;print(json.load(sys.stdin)['status'])" || true)
+            echo "attempt $i: meta.generated_at=$got health=$status"
+            if [ "$got" = "$EXPECT" ] && [ "$status" != "fail" ] && curl -fsS -o /dev/null "$URL"; then exit 0; fi
+            sleep 30
+          done
+          echo "Live site is not serving the expected data" && exit 1
+
+  alert:
+    needs: [build, deploy, verify]
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Open or update a site-health issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title="Site update failed"
+          body="The scheduled site update failed: $RUN. The public site keeps showing the last good data (with a stale-data banner after 30 h)."
+          n=$(gh issue list -R "$GITHUB_REPOSITORY" --state open --search "in:title \"$title\"" --json number --jq '.[0].number')
+          if [ -n "$n" ]; then gh issue comment "$n" -R "$GITHUB_REPOSITORY" --body "$body"; else gh issue create -R "$GITHUB_REPOSITORY" --title "$title" --body "$body"; fi

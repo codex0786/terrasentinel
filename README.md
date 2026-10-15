@@ -96,6 +96,14 @@ agricultural districts such as Udham Singh Nagar and Hardwar have many detection
 This checks detections, not day-level predictions.
 [report](reports/experiment_summaries/uttarakhand_validation_20261015T1049.md)
 
+## Public site (GitHub Pages)
+
+https://codex0786.github.io/terrasentinel/ is rebuilt twice daily by `.github/workflows/pages.yml`:
+FIRMS NRT → frozen B1 → JSON export → **data-quality guard** (`pipelines/check_site_data.py`; any failure blocks
+publishing, so the last good version stays live) → build → deploy → check that the live site serves the new data.
+A failure opens or updates a "Site update failed" GitHub issue. Thresholds are in `configs/site_checks.yaml`.
+Local development: `cd site && npm install && npm run dev` (after `pipelines/export_site_data.py`).
+
 ## Dashboard (research prototype)
 
 ```bash
