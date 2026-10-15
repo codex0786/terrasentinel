@@ -56,9 +56,18 @@ def check_subset(content: bytes, bbox: dict) -> None:
 
 
 class ImergClient:
-    def __init__(self, archive: RawArchive, session, concept_id: str, bbox: dict):
+    def __init__(self, archive: RawArchive, session, concept_id: str, bbox: dict, session_factory=None):
+        """session_factory: callable returning a fresh authenticated session (used when a long run's login expires)."""
         self.archive, self.session, self.concept, self.bbox = archive, session, concept_id, bbox
+        self.session_factory = session_factory
         self._lock = threading.Lock()
+        self._renewals = 0
+
+    def _renew(self, stale) -> None:
+        with self._lock:
+            if self.session is stale and self.session_factory is not None:   # only one thread renews
+                self.session = self.session_factory()
+                self._renewals += 1
 
     def archived(self) -> set[str]:
         return {r.request["granule_ur"] for r in self.archive.records()
@@ -67,9 +76,11 @@ class ImergClient:
     def fetch_one(self, granule_ur: str):
         name = granule_ur.split(":", 1)[1]
         url = OPENDAP.format(concept=self.concept, granule=quote(granule_ur, safe=""))
+        renewed = False
         for attempt in range(4):
+            session = self.session
             try:
-                r = self.session.get(url + ".dap.nc4", params={"dap4.ce": constraint(self.bbox)}, timeout=300)
+                r = session.get(url + ".dap.nc4", params={"dap4.ce": constraint(self.bbox)}, timeout=300)
                 if r.status_code == 200:
                     check_subset(r.content, self.bbox)
                     request = {"short_name": SHORT_NAME, "version": VERSION, "granule_ur": granule_ur,
@@ -77,8 +88,13 @@ class ImergClient:
                                "bbox": self.bbox}
                     with self._lock:
                         return self.archive.store("earthdata", PRODUCT, r.content, request, suffix=".nc4")
+                if r.status_code == 401 and not renewed and self.session_factory is not None:
+                    self._renew(session)                  # login expired during a long run
+                    renewed = True
+                    continue
                 if r.status_code in (401, 403):
-                    raise PermissionError(f"HTTP {r.status_code}: approve 'NASA GESDISC DATA ARCHIVE' in Earthdata")
+                    raise PermissionError(f"HTTP {r.status_code}: Earthdata login rejected or expired, or the "
+                                          "'NASA GESDISC DATA ARCHIVE' application is not approved")
             except PermissionError:
                 raise
             except Exception as exc:  # retried below

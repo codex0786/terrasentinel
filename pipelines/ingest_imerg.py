@@ -27,7 +27,11 @@ def main() -> None:
     login()
     bbox = load_yaml("india.yaml")["region"]["bbox"]
     concept = earthaccess.search_datasets(short_name=SHORT_NAME, version=VERSION)[0]["meta"]["concept-id"]
-    client = ImergClient(RawArchive(data_dir() / "raw"), earthaccess.get_requests_https_session(), concept, bbox)
+    def fresh_session():
+        login()
+        return earthaccess.get_requests_https_session()
+
+    client = ImergClient(RawArchive(data_dir() / "raw"), fresh_session(), concept, bbox, session_factory=fresh_session)
     have = client.archived()
     for year in range(args.last_year, args.first_year - 1, -1):
         found = earthaccess.search_data(short_name=SHORT_NAME, version=VERSION,
