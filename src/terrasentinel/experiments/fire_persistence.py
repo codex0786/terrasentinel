@@ -139,6 +139,14 @@ def run_baselines(rows: pd.DataFrame, det: pd.DataFrame, cfg: dict, *, include_t
         SeasonalBaseline(hist, cfg["dataset"]["history_start"], **seasonal),
         LogisticModel(m["satellite_only_features"]),
     ]
+    met = m.get("meteorology_features")
+    if met:
+        missing = [f for f in met if f not in rows.columns]
+        if missing:
+            raise KeyError(f"meteorology features not in dataset (rebuild with weather): {missing}")
+        # M2: same learner as B1 plus weather; only the satellite counts get log1p.
+        models.append(LogisticModel(m["satellite_only_features"] + met, name="M2_meteorology",
+                                    log_features=m["satellite_only_features"] + m.get("meteorology_log_features", [])))
     for model in models:
         model.fit(train)
 
@@ -154,15 +162,20 @@ def run_baselines(rows: pd.DataFrame, det: pd.DataFrame, cfg: dict, *, include_t
             df[model.name] = model.predict(df)
         metrics = evaluate_scores(df, [mm.name for mm in models], budget).assign(eval_set=name)
         results.append(metrics)
-        cmp = block_bootstrap_diff(df["label"], df["B1_satellite_only"], df["B0_seasonal"], block_ids(df),
-                                   pr_auc, n_boot=bs["n_boot"], seed=bs["seed"])
-        comparisons.append({"eval_set": name, "comparison": "B1 - B0 (pr_auc)", **cmp})
+        pairs = [("B1_satellite_only", "B0_seasonal")]
+        if met:
+            pairs.insert(0, ("M2_meteorology", "B1_satellite_only"))   # pre-registered primary comparison
+        blocks = block_ids(df)
+        for a, b in pairs:
+            cmp = block_bootstrap_diff(df["label"], df[a], df[b], blocks, pr_auc, n_boot=bs["n_boot"], seed=bs["seed"])
+            comparisons.append({"eval_set": name, "comparison": f"{a.split('_')[0]} - {b.split('_')[0]} (pr_auc)",
+                                **cmp})
         scored.append(df)
 
     return {
         "metrics": pd.concat(results, ignore_index=True) if results else pd.DataFrame(),
         "comparisons": pd.DataFrame(comparisons),
         "set_counts": _set_counts(rows, include_test),
-        "b1_coefficients": models[2].coefficients(),
+        "coefficients": {mm.name: mm.coefficients() for mm in models if isinstance(mm, LogisticModel)},
         "scored": pd.concat(scored, ignore_index=True) if scored else pd.DataFrame(),
     }

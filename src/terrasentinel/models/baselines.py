@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
+from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import FunctionTransformer, StandardScaler
@@ -87,24 +89,39 @@ class SeasonalBaseline:
 
 
 class LogisticModel:
-    """B1 (and later M2): regularised logistic regression on log1p-transformed non-negative features."""
+    """B1 / M2: L2 logistic regression. `log_features` (default: all) are non-negative counts/sums and get
+    log1p; other features (temperatures, anomalies) are only standardised. Missing values are imputed
+    with the training median (fit on training rows only)."""
 
-    def __init__(self, features: list[str], name: str = "B1_satellite_only", C: float = 1.0):
+    def __init__(self, features: list[str], name: str = "B1_satellite_only", C: float = 1.0,
+                 log_features: list[str] | None = None):
         self.features = list(features)
         self.name = name
         self.C = C
+        self.log_features = list(features) if log_features is None else [f for f in features if f in log_features]
+        self.linear_features = [f for f in self.features if f not in self.log_features]
+
+    def _pipeline(self):
+        parts = []
+        if self.log_features:
+            parts.append(("log", make_pipeline(SimpleImputer(strategy="median"), FunctionTransformer(np.log1p)),
+                          self.log_features))
+        if self.linear_features:
+            parts.append(("lin", SimpleImputer(strategy="median"), self.linear_features))
+        return make_pipeline(ColumnTransformer(parts), StandardScaler(), LogisticRegression(C=self.C, max_iter=2000))
 
     def fit(self, rows: pd.DataFrame) -> LogisticModel:
         missing = [f for f in self.features if f not in rows.columns]
         if missing:
             raise KeyError(f"missing feature columns {missing}")
-        self.model_ = make_pipeline(
-            FunctionTransformer(np.log1p), StandardScaler(), LogisticRegression(C=self.C, max_iter=2000)
-        ).fit(rows[self.features].to_numpy(float), rows["label"].to_numpy())
+        negative = [f for f in self.log_features if (rows[f] < 0).any()]
+        if negative:
+            raise ValueError(f"log1p features must be non-negative: {negative}")
+        self.model_ = self._pipeline().fit(rows[self.features], rows["label"].to_numpy())
         return self
 
     def predict(self, rows: pd.DataFrame) -> np.ndarray:
-        return self.model_.predict_proba(rows[self.features].to_numpy(float))[:, 1]
+        return self.model_.predict_proba(rows[self.features])[:, 1]
 
     def coefficients(self) -> pd.Series:
-        return pd.Series(self.model_[-1].coef_[0], index=self.features)
+        return pd.Series(self.model_[-1].coef_[0], index=self.log_features + self.linear_features)

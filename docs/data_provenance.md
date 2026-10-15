@@ -7,7 +7,7 @@ below. Provider documentation alone does not count. Machine-readable status live
 | Source | Role | Access | Resolution / latency | Project status |
 |---|---|---|---|---|
 | NASA FIRMS (VIIRS 375 m, MODIS 1 km) | Fire detections, labels | Free MAP_KEY; area CSV API, ≤5 days/request, 5000 transactions / 10 min | NRT around 3 h; SP archive lags by months | smoke-tested and ingested (2024 Mar–May SP); see log below |
-| NASA POWER | Meteorological context | No auth, REST | ~0.5° daily | unverified |
+| NASA POWER (MERRA-2) | Meteorological context (M2) | No auth; daily regional API, 1 parameter / ≤10°×10° / ≤366 days per request; UTC | 0.5° × 0.625°, daily | 440 files (11 tiles × 4 params × 2015–2024) ingested 2026-10-15; 2,864 points × 3,653 days, 2 missing values; tile-edge duplicates identical |
 | GPM IMERG | Rainfall (Workstream B) | Earthdata Login + earthaccess | 0.1°, half-hourly/daily | unverified |
 | MODIS MOD13Q1.061 | NDVI/EVI | Earthdata Login + earthaccess | 250 m, 16-day | unverified |
 | SMAP | Soil moisture | Earthdata Login + earthaccess | product-dependent | unverified |

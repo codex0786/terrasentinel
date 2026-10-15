@@ -36,10 +36,10 @@ def main() -> None:
         f"Test sets scored: **{'yes' if args.evaluate_test else 'no (development run)'}**", "",
         "## Rows per set", "", res["set_counts"].to_markdown(), "",
         "## Metrics", "", res["metrics"].round(4).to_markdown(index=False), "",
-        "## B1 vs B0 (block bootstrap, region x ISO week)", "",
+        "## Model comparisons (block bootstrap, region x ISO week; M2 - B1 is the pre-registered primary)", "",
         res["comparisons"].round(4).to_markdown(index=False), "",
-        "## B1 coefficients (standardised log1p features)", "",
-        res["b1_coefficients"].round(4).to_frame("coef").to_markdown(), "",
+        "## Logistic coefficients (standardised; counts/precip/dry-days log1p)", "",
+        pd.DataFrame(res["coefficients"]).round(4).to_markdown(), "",
         "Labels are future *detections*, not verified fire (see docs/limitations.md).",
     ]
     out = REPO_ROOT / "reports" / "experiment_summaries" / f"{cfg['experiment']}_{now:%Y%m%dT%H%M}.md"

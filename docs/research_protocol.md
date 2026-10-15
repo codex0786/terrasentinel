@@ -59,7 +59,7 @@ because SP data did not exist in real time. A separate NRT evaluation uses measu
 | B-null | Training prevalence | none (reference: PR-AUC = prevalence) |
 | B0 | Seasonal persistence, Platt-scaled | fraction of days with detection in the same cell, ±15 d around the same day-of-year, previous 5 years. Years before the archive start are skipped, not counted as zero |
 | B1 | Satellite-only (L2 logistic regression on log1p, standardised) | trailing counts 1/3/7/30 d, FRP sums 1/7 d, days since last detection |
-| M2 | Meteorology-augmented (same learner as B1) | B1 + NASA POWER trailing weather anomalies |
+| M2 | Meteorology-augmented (same learner as B1) | B1 + NASA POWER (MERRA-2, UTC days, nearest 0.5°×0.625° point): 3-day mean T2M_MAX, RH2M, WS2M; T2M_MAX and RH2M anomalies; 7-day precipitation; 30-day precipitation anomaly; days since ≥1 mm rain. Anomalies vs a 2015–2019 day-of-year climatology. All windows end at D−1 |
 | M3 | Gradient-boosted trees (conditional) | only if M2 leaves a meaningful gap; same feature sets |
 
 Implemented in `src/terrasentinel/models/baselines.py`; run via `pipelines/train_baselines.py`.
@@ -94,4 +94,6 @@ locked test period. Otherwise the conclusion is: no robust improvement under the
 | 2026-10-15 | Boundary clipping, B-null/B0/B1, metrics, block bootstrap, and test-set lock implemented. Checked on synthetic data only. |
 | 2026-10-15 | Periods, sensors, and the outage rule fixed (see "Data and periods"). B0 history restricted to S-NPP. No model had been fit on real data. |
 | 2026-10-15 | Holdout states and alert budget fixed. `configs/experiments/fire_persistence_v0.yaml` sha256 prefix `32864af15e6310f2` frozen before the first model fit. |
+| 2026-10-15 | M2 feature set fixed before any M2 fit (config sha256 prefix `cbd5479666d4d9be`). POWER precipitation plausibility bound raised from 1,000 to 2,000 mm/day after inspecting one 1,038 mm value (coherent storm over the Bay of Bengal, outside India). |
+| 2026-10-15 | M2 development run (train → val/geo_val; test not scored). M2 − B1 PR-AUC: val +0.0052 [+0.0029, +0.0073]; geo_val +0.0038 [−0.0003, +0.0082]. The feature freeze above was recorded locally before this fit but pushed to GitHub only afterwards. The minimum worthwhile improvement is still open: +0.01 was proposed *before* any M2 result; choosing a smaller value now would be informed by these numbers and must be justified as such. |
 | 2026-10-15 | First development run (train → val/geo_val). **Deviation:** that run's report showed test-period row counts *and label prevalence* (test 0.360, geo_test 0.423). No test predictions or model metrics were computed. The report now withholds test label statistics until the lock. Nothing was changed in response to the values. |

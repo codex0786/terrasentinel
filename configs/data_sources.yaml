@@ -27,9 +27,13 @@ firms:
   status: smoke_tested   # 2026-10-15: NRT + SP smoke tests passed; VIIRS_SNPP_SP 2024-03-01..05-31 ingested
 
 nasa_power:
-  base_url: https://power.larc.nasa.gov/api/temporal/daily/point
+  base_url: https://power.larc.nasa.gov/api/temporal/daily/regional
   auth: none
-  status: unverified
+  # Limits checked 2026-10-15: 1 parameter/request, <=10 deg per side, <=366 days. Grid 0.5 x 0.625 deg (MERRA-2).
+  parameters: [T2M_MAX, RH2M, WS2M, PRECTOTCORR]
+  time_standard: UTC
+  skip_tiles: ["30,38,88,98"]   # Tibet/Qinghai: no Indian territory (India's boundary north of 30N ends near 81E)
+  status: smoke_tested   # 2026-10-15: regional CSV probe returned 200; size/date limits confirmed by 422 messages
 
 gpm_imerg:
   access: earthaccess (Earthdata Login)

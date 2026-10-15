@@ -1,5 +1,6 @@
 """End-to-end checks on synthetic worlds where the right answer is known."""
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -124,3 +125,24 @@ def test_dev_run_withholds_test_label_stats(signal_world):
     assert counts.loc["test", "size"] > 0
     assert pd.isna(counts.loc["test", "sum"]) and pd.isna(counts.loc["test", "mean"])
     assert not pd.isna(counts.loc["train", "mean"])
+
+
+def test_m2_runs_and_is_compared_to_b1(signal_world):
+    rows, det, _ = signal_world
+    rng = np.random.default_rng(0)
+    # 'wx_signal' carries extra information about the label; 'wx_noise' carries none.
+    rows = rows.assign(wx_signal=rows["label"] + rng.normal(0, 1.0, len(rows)), wx_noise=rng.normal(0, 1, len(rows)))
+    cfg = {**CFG, "models": {**CFG["models"], "meteorology_features": ["wx_signal", "wx_noise"]}}
+    res = run_baselines(rows, det, cfg)
+    cmp = res["comparisons"].set_index(["eval_set", "comparison"])
+    assert cmp.loc[("val", "M2 - B1 (pr_auc)"), "ci_low"] > 0
+    assert "M2_meteorology" in set(res["metrics"]["model"])
+
+
+def test_m2_with_pure_noise_shows_no_gain(signal_world):
+    rows, det, _ = signal_world
+    rng = np.random.default_rng(1)
+    rows = rows.assign(wx_noise=rng.normal(0, 1, len(rows)), wx_noise2=rng.normal(0, 1, len(rows)))
+    cfg = {**CFG, "models": {**CFG["models"], "meteorology_features": ["wx_noise", "wx_noise2"]}}
+    cmp = run_baselines(rows, det, cfg)["comparisons"].set_index(["eval_set", "comparison"])
+    assert cmp.loc[("val", "M2 - B1 (pr_auc)"), "ci_low"] < 0.01

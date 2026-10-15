@@ -4,18 +4,22 @@ Open-source, research-grade Earth-observation hazard intelligence for India. It 
 free satellite observations into **validated, uncertainty-aware** environmental intelligence.
 It separates observations from predictions and reports what remains unknown.
 
-> **Status (2026-10-15): data pipeline and baselines running on real data; test period not yet scored.**
-> VIIRS S-NPP (2015–2024) and NOAA-20 (2019–2024) science-quality detections are ingested and audited;
-> the fire-persistence dataset (1.6 M cell-days in India) is built; baselines have been evaluated on the
-> 2023 validation year only. The pre-registered comparison (meteorology-augmented M2 vs B1 on the locked
-> 2024 test year) has **not** been run. Validation numbers are development results, not findings.
+> **Status (2026-10-15): baselines and the meteorology model (M2) evaluated on validation; test not yet scored.**
+> VIIRS S-NPP (2015–2024) and NOAA-20 (2019–2024) detections and NASA POWER weather (2015–2024) are
+> ingested and audited; the fire-persistence dataset (1.6 M cell-days in India) is built. The pre-registered
+> comparison (M2 vs B1 on the locked 2024 test year) has **not** been run. Validation numbers are
+> development results, not findings.
 
 ### Development results (validation 2023, not the locked test)
 
-| Eval set | Prevalence | B-null PR-AUC | B0 seasonal | B1 satellite-only | B1 − B0 [95% block-bootstrap CI] |
-|---|---|---|---|---|---|
-| Training states | 0.367 | 0.368 | 0.690 | 0.713 | +0.023 [+0.012, +0.034] |
-| Held-out states (Odisha, Haryāna, Mizoram) | 0.463 | 0.463 | 0.703 | 0.758 | +0.055 [+0.031, +0.075] |
+PR-AUC, with 95% block-bootstrap CIs (region × ISO week) for model differences:
+
+| Eval set | Prevalence | B-null | B0 seasonal | B1 satellite-only | M2 + weather | B1 − B0 | M2 − B1 |
+|---|---|---|---|---|---|---|---|
+| Training states | 0.367 | 0.368 | 0.690 | 0.713 | 0.718 | +0.023 [+0.012, +0.034] | +0.005 [+0.003, +0.007] |
+| Held-out states (Odisha, Haryāna, Mizoram) | 0.463 | 0.463 | 0.703 | 0.758 | 0.762 | +0.055 [+0.031, +0.075] | +0.004 [−0.000, +0.008] |
+
+Weather improves calibration (ECE 0.017 → 0.013) but leaves precision at a 10%-per-day alert budget unchanged.
 
 Labels are next-day satellite *detections*, not verified fire. See [limitations](docs/limitations.md).
 

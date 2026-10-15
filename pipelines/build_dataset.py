@@ -15,6 +15,7 @@ import yaml
 
 from terrasentinel.config import data_dir, load_yaml
 from terrasentinel.experiments.fire_persistence import build_dataset, prepare_detections
+from terrasentinel.features.weather import build_weather_features
 from terrasentinel.geospatial.boundary import load_boundary
 from terrasentinel.geospatial.grid import Grid
 from terrasentinel.labels.persistence import find_unobserved_days
@@ -70,6 +71,27 @@ def main() -> None:
                          feats["features"]["trailing_count_windows_days"], feats["features"]["days_since_last_cap"],
                          unobserved)
 
+    weather_info = None
+    if exp.get("weather"):
+        wcfg = exp["weather"]
+        wpath = data_dir() / "interim" / "power_daily.parquet"
+        if not wpath.exists():
+            raise SystemExit(f"{wpath} not found. Run pipelines/ingest_power.py and pipelines/build_weather.py.")
+        rc = rows["cell_id"].str.extract(r"^r(-?\d+)_c(-?\d+)$").astype(int)
+        r = grid.resolution_deg
+        clat = grid.origin_lat + (rc[0] + 0.5) * r
+        clon = grid.origin_lon + (rc[1] + 0.5) * r
+        n = len(rows)
+        rows = build_weather_features(pd.read_parquet(wpath), rows, clat.to_numpy(), clon.to_numpy(),
+                                      tuple(wcfg["climatology_years"]), ds["start"])
+        assert len(rows) == n, "weather join changed the row count"
+        met = exp["models"].get("meteorology_features", [])
+        weather_info = {"source": "power_daily.parquet",
+                        "sha256": hashlib.sha256(wpath.read_bytes()).hexdigest(),
+                        "climatology_years": wcfg["climatology_years"],
+                        "missing_fraction": rows[met].isna().mean().round(5).to_dict() if met else {}}
+        print(f"Weather features attached; missing fraction: {weather_info['missing_fraction']}")
+
     out_dir = data_dir() / "processed" / exp["experiment"]
     out_dir.mkdir(parents=True, exist_ok=True)
     rows.to_parquet(out_dir / "rows.parquet", index=False)
@@ -80,6 +102,7 @@ def main() -> None:
         "experiment": exp["experiment"],
         "config_sha256": config_hash,
         "snapshot_sha256": {src: hashlib.sha256(p.read_bytes()).hexdigest() for src, p in snapshots.items()},
+        "weather": weather_info,
         "unobserved_label_days_excluded": [d.date().isoformat() for d in unobserved],
         "rows": len(rows),
         "positives": int(rows["label"].sum()),
