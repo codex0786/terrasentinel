@@ -4,23 +4,21 @@ Open-source, research-grade Earth-observation hazard intelligence for India. It 
 free satellite observations into **validated, uncertainty-aware** environmental intelligence.
 It separates observations from predictions and reports what remains unknown.
 
-> **Status (2026-10-15): baselines and the meteorology model (M2) evaluated on validation; test not yet scored.**
-> VIIRS S-NPP (2015–2024) and NOAA-20 (2019–2024) detections and NASA POWER weather (2015–2024) are
-> ingested and audited; the fire-persistence dataset (1.6 M cell-days in India) is built. The pre-registered
-> comparison (M2 vs B1 on the locked 2024 test year) has **not** been run. Validation numbers are
-> development results, not findings.
+> **Status (2026-10-15): v0 study complete.** The protocol was locked (commit `e0c9385`) and the 2024
+> test year was scored once. **Pre-registered result: adding NASA POWER weather (M2) gave no robust
+> improvement over satellite fire history alone (B1)**: PR-AUC +0.0019 [95% CI −0.0002, +0.0043], below
+> the +0.01 threshold. Satellite history robustly beat the seasonal baseline, including in held-out states.
 
-### Development results (validation 2023, not the locked test)
+### Locked test results (2024; scored once)
 
-PR-AUC, with 95% block-bootstrap CIs (region × ISO week) for model differences:
+PR-AUC, with 95% block-bootstrap CIs (state × ISO week) for differences:
 
-| Eval set | Prevalence | B-null | B0 seasonal | B1 satellite-only | M2 + weather | B1 − B0 | M2 − B1 |
-|---|---|---|---|---|---|---|---|
-| Training states | 0.367 | 0.368 | 0.690 | 0.713 | 0.718 | +0.023 [+0.012, +0.034] | +0.005 [+0.003, +0.007] |
-| Held-out states (Odisha, Haryāna, Mizoram) | 0.463 | 0.463 | 0.703 | 0.758 | 0.762 | +0.055 [+0.031, +0.075] | +0.004 [−0.000, +0.008] |
+| Test set | Prevalence | B0 seasonal | B1 satellite-only | M2 + weather | M2 − B1 (primary) | B1 − B0 |
+|---|---|---|---|---|---|---|
+| Training states | 0.360 | 0.651 | 0.683 | 0.685 | +0.002 [−0.000, +0.004] | +0.031 [+0.020, +0.042] |
+| Held-out states (Odisha, Haryāna, Mizoram) | 0.423 | 0.686 | 0.724 | 0.724 | +0.001 [−0.003, +0.005] | +0.038 [+0.016, +0.056] |
 
-Weather improves calibration (ECE 0.017 → 0.013) but leaves precision at a 10%-per-day alert budget unchanged.
-
+Full details, secondary endpoints, and interpretation limits: [research protocol](docs/research_protocol.md#results-on-the-locked-test-period-scored-once-2026-10-15-protocol-commit-e0c9385).
 Labels are next-day satellite *detections*, not verified fire. See [limitations](docs/limitations.md).
 
 ## What exists today

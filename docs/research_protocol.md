@@ -111,6 +111,36 @@ B1 coefficients are reported but not interpreted causally, since the count windo
 
 Data files are not in git; they are reproducible from the raw archive manifests with the pipelines.
 
+## Results on the locked test period (scored once, 2026-10-15, protocol commit e0c9385)
+
+Report: `reports/experiment_summaries/fire_persistence_v0_20261015T0556.md`. All six frozen inputs
+matched their lock hashes immediately before the run. Validation numbers reproduced exactly.
+
+**Primary endpoint.** M2 − B1 PR-AUC on `test` (2024, 279,655 cell-days, prevalence 0.360):
+**+0.0019 [95% CI −0.0002, +0.0043]**. The CI includes 0, so under the decision rule the conclusion is:
+**no robust improvement from meteorology under the tested conditions.** The point estimate is also
+below the +0.01 worthwhile threshold.
+
+**Secondary endpoints** (not corrected for multiplicity):
+
+| Set | B-null | B0 | B1 | M2 | M2 − B1 | B1 − B0 | M2 − B0 |
+|---|---|---|---|---|---|---|---|
+| test (2024) | 0.360 | 0.651 | 0.683 | 0.685 | +0.002 [−0.000, +0.004] | +0.031 [+0.020, +0.042] | +0.033 [+0.022, +0.044] |
+| geo_test (Odisha, Haryāna, Mizoram, 2024) | 0.423 | 0.686 | 0.724 | 0.724 | +0.001 [−0.003, +0.005] | +0.038 [+0.016, +0.056] | +0.039 [+0.019, +0.056] |
+
+- Recent satellite fire history (B1) robustly beats the seasonal baseline (B0) on both test sets,
+  including states never seen in training.
+- Top-10%-per-day precision on test: B0 0.760, B1 0.809, M2 0.807 (chance 0.276).
+- Calibration (ECE) on test: B1 0.013, M2 0.011; on geo_test B1 0.036, M2 0.041. So the validation
+  improvement in calibration did not carry over consistently.
+- The fixed 100/day budget saturates on geo_test (flags 65% of rows), so it is uninformative there.
+- All PR-AUCs are lower in 2024 than in 2023 (e.g. B1 0.713 → 0.683), which is consistent with
+  year-to-year shift.
+
+**Interpretation limits.** Labels are next-day satellite *detections* from the same sensors as the
+features, not verified fire on the ground. Weather is MERRA-2 at about 0.5°, much coarser than the 0.1°
+cells. The result concerns this feature set and this outcome (persistence, not ignition).
+
 ## Change log
 
 | Date | Change |
@@ -120,6 +150,7 @@ Data files are not in git; they are reproducible from the raw archive manifests 
 | 2026-10-15 | Periods, sensors, and the outage rule fixed (see "Data and periods"). B0 history restricted to S-NPP. No model had been fit on real data. |
 | 2026-10-15 | Holdout states and alert budget fixed. `configs/experiments/fire_persistence_v0.yaml` sha256 prefix `32864af15e6310f2` frozen before the first model fit. |
 | 2026-10-15 | M2 feature set fixed before any M2 fit (config sha256 prefix `cbd5479666d4d9be`). POWER precipitation plausibility bound raised from 1,000 to 2,000 mm/day after inspecting one 1,038 mm value (coherent storm over the Bay of Bengal, outside India). |
+| 2026-10-15 | Test period scored once (see Results). No reruns. |
 | 2026-10-15 | **Protocol LOCKED.** Primary endpoint, decision rule, +0.01 threshold, single-run rule, and frozen input hashes recorded. M2 − B0 added as a secondary comparison (named in the hypothesis). The test set had not been scored. |
 | 2026-10-15 | M2 development run (train → val/geo_val; test not scored). M2 − B1 PR-AUC: val +0.0052 [+0.0029, +0.0073]; geo_val +0.0038 [−0.0003, +0.0082]. The feature freeze above was recorded locally before this fit but pushed to GitHub only afterwards. The minimum worthwhile improvement is still open: +0.01 was proposed *before* any M2 result; choosing a smaller value now would be informed by these numbers and must be justified as such. |
 | 2026-10-15 | First development run (train → val/geo_val). **Deviation:** that run's report showed test-period row counts *and label prevalence* (test 0.360, geo_test 0.423). No test predictions or model metrics were computed. The report now withholds test label statistics until the lock. Nothing was changed in response to the values. |
