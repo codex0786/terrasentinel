@@ -165,6 +165,7 @@ def run_baselines(rows: pd.DataFrame, det: pd.DataFrame, cfg: dict, *, include_t
         pairs = [("B1_satellite_only", "B0_seasonal")]
         if met:
             pairs.insert(0, ("M2_meteorology", "B1_satellite_only"))   # pre-registered primary comparison
+            pairs.append(("M2_meteorology", "B0_seasonal"))            # secondary (hypothesis part 0)
         blocks = block_ids(df)
         for a, b in pairs:
             cmp = block_bootstrap_diff(df["label"], df[a], df[b], blocks, pr_auc, n_boot=bs["n_boot"], seed=bs["seed"])

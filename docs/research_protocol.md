@@ -1,7 +1,8 @@
 # Research protocol: Workstream A, fire persistence
 
-Status: **DRAFT, not locked.** Items marked **TBD** must be decided and committed *before*
-the final test period is opened. The commit hash that locks this file is the pre-registration.
+Status: **LOCKED** on 2026-10-15, before the 2024 test period was scored. The git commit that
+introduces this line is the pre-registration. Any later change must be appended to the change log
+with a reason; results are reported whatever they show.
 
 ## Hypothesis
 
@@ -27,12 +28,14 @@ This is a hypothesis, not a result. Null and negative results will be reported.
   population ranges from a median of ~50–85 in Jul–Sep to ~2,200 in March, so a fixed budget saturates
   in the monsoon.
 - Holdout and budget were chosen from training-period population counts only; no model had been fit.
-- **Still open (must be fixed before the lock):** minimum worthwhile improvement on the primary metric.
+- **Minimum worthwhile improvement:** +0.01 PR-AUC (M2 − B1). This value was proposed before any M2
+  result existed. It was confirmed at lock, after the validation results (+0.005 / +0.004) were known;
+  it was not lowered to fit them.
 
 ## Unit of analysis
 
 Primary: **grid cell × UTC day** on a regular 0.1° lat/lon grid anchored at (6°N, 68°E)
-(`configs/india.yaml`). Secondary: clustered fire events (definition TBD, M4).
+(`configs/india.yaml`). Event-cluster analyses are out of scope for v0 and not part of this lock.
 
 ## Outcome (implemented in `src/terrasentinel/labels/persistence.py`)
 
@@ -67,10 +70,13 @@ B1 coefficients are reported but not interpreted causally, since the count windo
 
 ## Evaluation
 
-- **Primary metric (proposed):** PR-AUC on the temporal test period, with M2 − B1 difference
-  and 95% CI from a **block bootstrap over (state × week) blocks**. Final choice: **TBD at lock.**
-- **Secondary metrics:** precision/recall at a fixed alert budget (top-k cell-days per day),
-  Brier score, reliability diagram, ROC-AUC.
+- **Primary endpoint:** PR-AUC difference **M2 − B1** on the `test` set (2024 label days in
+  non-held-out states, excluding unobserved days), with a 95% percentile CI from a block bootstrap
+  over (state × ISO week) blocks, 2,000 resamples, seed 20261015.
+- **Secondary endpoints, reported without multiplicity correction and labelled as secondary:**
+  the same difference on `geo_test` (Odisha, Haryāna, Mizoram in 2024); B1 − B0 and M2 − B0 on both
+  test sets; top-10%-per-day precision/recall; fixed-100/day precision/recall (flagged when saturated);
+  Brier score; ECE; ROC-AUC.
 - **Splits:** temporal train/val/test with an embargo gap (`src/terrasentinel/evaluation/splits.py`).
   Cutoff dates: fixed above (train ≤ 2022-12-31, val ≤ 2023-12-31, test 2024).
   Geographic holdout: fixed above. Held-out states are scored as `geo_val` during development and
@@ -78,13 +84,32 @@ B1 coefficients are reported but not interpreted causally, since the count windo
 - **Alert budget:** fixed above. Reports flag `fixed100_saturated` when the fixed budget flags most rows.
 - **Test-set guard:** `train_baselines.py --evaluate-test` refuses to run until this file
   starts with `Status: **LOCKED**`.
-- **Minimum worthwhile improvement:** **TBD after the audit**, based on prevalence.
-- Thresholds are chosen on validation data only.
+- **Minimum worthwhile improvement:** +0.01 PR-AUC (see "Data and periods").
+- Models are fit once on the training set; no tuning or refitting after the test is opened.
+- The test set is scored **once**. A rerun is allowed only for a demonstrable software fault, must be
+  logged with the fault and the fix, and both runs are reported.
 
-## Acceptance
+## Acceptance (decision rule for the primary endpoint)
 
-M2 is said to improve on B1 only if the CI for the primary-metric difference excludes 0 on the
-locked test period. Otherwise the conclusion is: no robust improvement under the tested conditions.
+| Result on `test` | Conclusion |
+|---|---|
+| CI lower bound > 0 **and** point estimate ≥ +0.01 | Robust and worthwhile improvement from meteorology |
+| CI lower bound > 0, point estimate < +0.01 | Statistically robust but below the pre-set worthwhile threshold |
+| CI includes 0 | No robust improvement under the tested conditions |
+| CI upper bound < 0 | Meteorology robustly worsens performance |
+
+## Frozen inputs at lock (sha256 prefixes)
+
+| File | sha256 |
+|---|---|
+| configs/experiments/fire_persistence_v0.yaml | cbd5479666d4d9be |
+| configs/features.yaml | e6db62c945da24f7 |
+| configs/india.yaml | eacf077a40278179 |
+| data/processed/fire_persistence_v0/rows.parquet | 01670e4a60c24cca |
+| data/processed/fire_persistence_v0/detections.parquet | c859333344ffe86c |
+| data/interim/power_daily.parquet | 33fe876c2b65e491 |
+
+Data files are not in git; they are reproducible from the raw archive manifests with the pipelines.
 
 ## Change log
 
@@ -95,5 +120,6 @@ locked test period. Otherwise the conclusion is: no robust improvement under the
 | 2026-10-15 | Periods, sensors, and the outage rule fixed (see "Data and periods"). B0 history restricted to S-NPP. No model had been fit on real data. |
 | 2026-10-15 | Holdout states and alert budget fixed. `configs/experiments/fire_persistence_v0.yaml` sha256 prefix `32864af15e6310f2` frozen before the first model fit. |
 | 2026-10-15 | M2 feature set fixed before any M2 fit (config sha256 prefix `cbd5479666d4d9be`). POWER precipitation plausibility bound raised from 1,000 to 2,000 mm/day after inspecting one 1,038 mm value (coherent storm over the Bay of Bengal, outside India). |
+| 2026-10-15 | **Protocol LOCKED.** Primary endpoint, decision rule, +0.01 threshold, single-run rule, and frozen input hashes recorded. M2 − B0 added as a secondary comparison (named in the hypothesis). The test set had not been scored. |
 | 2026-10-15 | M2 development run (train → val/geo_val; test not scored). M2 − B1 PR-AUC: val +0.0052 [+0.0029, +0.0073]; geo_val +0.0038 [−0.0003, +0.0082]. The feature freeze above was recorded locally before this fit but pushed to GitHub only afterwards. The minimum worthwhile improvement is still open: +0.01 was proposed *before* any M2 result; choosing a smaller value now would be informed by these numbers and must be justified as such. |
 | 2026-10-15 | First development run (train → val/geo_val). **Deviation:** that run's report showed test-period row counts *and label prevalence* (test 0.360, geo_test 0.423). No test predictions or model metrics were computed. The report now withholds test label statistics until the lock. Nothing was changed in response to the values. |

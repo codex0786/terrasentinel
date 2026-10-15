@@ -84,12 +84,14 @@ def test_test_set_locked(signal_world, tmp_path):
     assert "test" not in set(run_baselines(rows, det, CFG)["metrics"]["eval_set"])
 
 
-def test_real_draft_protocol_is_not_locked():
-    from terrasentinel.config import REPO_ROOT
+def test_mentioning_the_marker_does_not_lock(tmp_path):
     from terrasentinel.experiments.fire_persistence import protocol_locked
-    # The draft *mentions* the lock marker; that must not count as locking it.
-    assert "Status: **LOCKED" in (REPO_ROOT / "docs" / "research_protocol.md").read_text()
-    assert not protocol_locked(REPO_ROOT / "docs" / "research_protocol.md")
+    # Regression: a draft that *describes* the marker must not count as locked.
+    p = tmp_path / "protocol.md"
+    p.write_text("Status: **DRAFT**\n- Test-set guard: refuses until this file starts with `Status: **LOCKED**`.\n")
+    assert not protocol_locked(p)
+    p.write_text("Status: **LOCKED** on 2026-10-15\n")
+    assert protocol_locked(p)
 
 
 def test_geographic_holdout_never_trains(signal_world):
