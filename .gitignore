@@ -11,3 +11,5 @@ data/processed/*
 !data/**/.gitkeep
 mlruns/
 reports/logs/
+data/live/*
+!data/live/.gitkeep

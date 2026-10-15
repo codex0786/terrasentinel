@@ -32,6 +32,7 @@ below. Provider documentation alone does not count. Machine-readable status live
 | 2026-10-15 | `ingest.py --source VIIRS_SNPP_SP --start 2024-03-01 --end 2024-05-31` | 19 requests OK; re-run was idempotent (identical checksums, nothing re-stored) |
 | 2026-10-15 | `audit.py --source VIIRS_SNPP_SP` | 0 invalid rows; 648,130 unique detections; 4 key-collision rows kept; 90 days (03-01..05-29). Re-run 2026-10-15 after fixing order-dependent dedup (FIRMS returned the 05-05 chunk with 2 rows swapped) |
 | 2026-10-15 | per-day probe of `VIIRS_SNPP_SP` | **Outage 2024-05-30..06-03 (0 detections/day)**; VIIRS_NOAA20_SP and MODIS_SP normal on the same days. Recorded in `configs/data_sources.yaml` `known_outages` |
+| 2026-10-15 | `live_update.py --first 2026-07-01` | 213 one-day NRT files (S-NPP, NOAA-20) for 2026-07-01..10-15; **NRT outage 2026-08-03** (zero India detections for one sensor); 0 of 59,610 rows outside their requested day |
 | 2026-10-15 | `data_availability` endpoint | VIIRS_SNPP_SP 2012-01-20..2026-06-30; VIIRS_NOAA20_SP 2018-04-01..2026-06-30; MODIS_SP 2000-11-01..2026-07-31 |
 
 ## Citations

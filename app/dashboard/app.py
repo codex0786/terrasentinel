@@ -10,7 +10,7 @@ predictions are drawn differently and labelled separately.
 from __future__ import annotations
 
 import json
-from datetime import date, timedelta
+from datetime import UTC, date, datetime, timedelta
 
 import numpy as np
 import pandas as pd
@@ -23,6 +23,8 @@ from terrasentinel.config import REPO_ROOT, data_dir
 
 EXPERIMENT = "fire_persistence_v0"
 PROC = data_dir() / "processed" / EXPERIMENT
+LIVE = data_dir() / "live"
+STALE_HOURS = 30
 MODELS = {
     "B1": "B1 · satellite history (recommended)",
     "M2": "M2 · B1 + weather (no robust gain on test)",
@@ -38,6 +40,8 @@ SET_NOTE = {
     "geo_val": ("Held-out state", "Held-out state, 2023.", "info"),
     "geo_test": ("Held-out state", "Held-out state, 2024 (locked test).", "success"),
     "embargo": ("Embargo", "Gap between periods; excluded from training and evaluation.", "info"),
+    "live": ("Near-real-time", "Preliminary FIRMS NRT data: detections can still be added or revised, and "
+             "outcomes for recent days are pending. Model B1 is applied unchanged from the locked study.", "info"),
 }
 
 st.set_page_config(page_title="TerraSentinel", page_icon="🛰️", layout="wide")
@@ -58,10 +62,18 @@ def load_meta() -> tuple[dict, dict, list[date]]:
     return meta, manifest, unobserved
 
 
+@st.cache_data(show_spinner="Loading live data…")
+def load_live(mtime: float) -> tuple[pd.DataFrame, dict]:
+    s = pd.read_parquet(LIVE / "live_scores.parquet")
+    s["day"] = s["date"].dt.date
+    s["set"] = "live"
+    return s, json.loads((LIVE / "live_meta.json").read_text())
+
+
 @st.cache_data(show_spinner="Loading detections…", max_entries=16)
-def load_detections(day: date) -> pd.DataFrame:
+def load_detections(day: date, live: bool = False, mtime: float = 0.0) -> pd.DataFrame:
     start = pd.Timestamp(day, tz="UTC")
-    t = pq.read_table(PROC / "detections.parquet",
+    t = pq.read_table((LIVE / "live_detections.parquet") if live else (PROC / "detections.parquet"),
                       columns=["latitude", "longitude", "acq_datetime_utc", "frp", "satellite", "source",
                                "confidence_class", "daynight", "region"],
                       filters=[("acq_datetime_utc", ">=", start),
@@ -88,27 +100,48 @@ def color_for(p: np.ndarray) -> list[list[int]]:
     return [[*c, 220] for c in rgb.tolist()]
 
 
-scores = load_scores()
+has_live = (LIVE / "live_scores.parquet").exists()
+with st.sidebar:
+    st.header("TerraSentinel")
+    st.caption("Research prototype · India · VIIRS active fire")
+    mode = st.radio("Mode", ["Live (near-real-time)", "Research archive 2020–2024"] if has_live
+                    else ["Research archive 2020–2024"])
+live = mode.startswith("Live")
 meta, manifest, unobserved = load_meta()
+if live:
+    live_mtime = (LIVE / "live_scores.parquet").stat().st_mtime
+    scores, live_meta = load_live(live_mtime)
+    unobserved = [date.fromisoformat(d) for d in live_meta["unobserved_days"]]
+else:
+    live_mtime = 0.0
+    scores = load_scores()
 first, last = scores["day"].min(), scores["day"].max()
 
 # ---------------------------------------------------------------- sidebar
 with st.sidebar:
-    st.header("TerraSentinel")
-    st.caption("Research prototype · India · VIIRS active fire")
-    day = st.date_input("UTC day D", value=date(2024, 4, 15), min_value=first, max_value=last)
-    model = st.radio("Prediction model", list(MODELS), format_func=MODELS.get)
+    day = st.date_input("UTC day D", value=last if live else date(2024, 4, 15), min_value=first, max_value=last)
+    model = st.radio("Prediction model", ["B1"] if live else list(MODELS), format_func=MODELS.get,
+                     help="Live mode uses the locked B1 model only (weather gave no robust gain).")
     show_obs = st.checkbox("Observed detections on D", value=True)
     show_pred = st.checkbox("Predictions for D (made at D 00:00 UTC)", value=True)
     reveal = st.checkbox("Reveal outcome (was fire detected on D?)", value=False,
                          help="Shows whether each predicted cell actually had a detection on D.")
     only_flagged = st.checkbox("Only top-10% flagged cells", value=False)
     st.divider()
-    st.caption(f"Model code `{meta['code_commit']}` · trained {meta['trained_on']}")
+    st.caption(f"Model code `{meta['code_commit']}` · trained {meta['trained_on']}"
+               + (" · applied to NRT data" if live else ""))
     st.caption("Not an emergency warning service. For official information see NDMA, IMD and "
                "state forest departments.")
 
-st.title("Fire persistence — India")
+st.title("Fire persistence — India" + (" · live" if live else ""))
+if live:
+    run_at = datetime.fromisoformat(live_meta["run_at_utc"])
+    age_h = (datetime.now(UTC) - run_at).total_seconds() / 3600
+    latest = ", ".join(f"{s.split('_')[1]} {datetime.fromisoformat(t):%d %b %H:%M}"
+                       for s, t in sorted(live_meta["latest_acquisition_utc"].items()))
+    msg = (f"Last update **{run_at:%d %b %Y %H:%M} UTC** ({age_h:.0f} h ago). "
+           f"Latest detections: {latest} UTC. Run `pipelines/live_update.py` to refresh.")
+    (st.error if age_h > STALE_HOURS else st.caption)(("**Stale data.** " if age_h > STALE_HOURS else "") + msg)
 st.caption(f"**{day:%A %d %B %Y}** (UTC). Predictions estimate whether a fire detected on "
            f"{day - timedelta(days=1):%d %b} is detected again on {day:%d %b}. They are not ignition forecasts.")
 
@@ -118,7 +151,7 @@ if day in unobserved:
              "This day is excluded from the study.")
 
 today = scores[scores["day"] == day].copy()
-det = load_detections(day) if show_obs else pd.DataFrame()
+det = load_detections(day, live, live_mtime) if show_obs else pd.DataFrame()
 
 if len(today):
     sets = today["set"].value_counts()
@@ -135,11 +168,14 @@ if len(today):
 
 # ---------------------------------------------------------------- KPIs
 c1, c2, c3, c4 = st.columns(4)
-c1.metric("Detections observed on D", f"{len(load_detections(day)):,}",
+c1.metric("Detections observed on D", f"{len(load_detections(day, live, live_mtime)):,}",
           help="Qualifying (nominal/high confidence) S-NPP + NOAA-20 detections inside India.")
 c2.metric("Cells predicted", f"{len(today):,}", help="Cells with a detection on D−1 (the eligible population).")
 c3.metric("Flagged (top 10%)", f"{int(today['flagged'].sum()) if len(today) else 0:,}")
-if reveal and len(today):
+pending = len(today) > 0 and today["label"].isna().all()
+if reveal and pending:
+    c4.metric("Flagged that persisted", "pending", help="Day D has not finished (plus publication lag) yet.")
+elif reveal and len(today):
     fl = today[today["flagged"]]
     c4.metric("Flagged that persisted", f"{fl['label'].mean():.0%}",
               delta=f"{fl['label'].mean() - today['label'].mean():+.0%} vs all eligible",
@@ -163,7 +199,8 @@ if show_pred and len(today):
         fill=color_for(view[pcol].to_numpy()),
         line=[[220, 20, 60, 255] if f else [255, 255, 255, 160] for f in view["flagged"]],
         prob=(view[pcol] * 100).round(0).astype(int).astype(str) + "%",
-        outcome=np.where(view["label"] == 1, "detected on D", "not detected on D") if reveal else "hidden",
+        outcome=(np.where(view["label"].isna(), "outcome pending",
+                          np.where(view["label"] == 1, "detected on D", "not detected on D")) if reveal else "hidden"),
         kind="Prediction",
     )
     # Circles with a minimum on-screen size: a 0.1-degree cell (~11 km) is ~1 px at national zoom.
@@ -217,7 +254,9 @@ with tab1:
 with tab2:
     exp = yaml.safe_load((REPO_ROOT / "configs" / "experiments" / f"{EXPERIMENT}.yaml").read_text())
     st.markdown(
-        f"- **Detections:** NASA FIRMS VIIRS science-quality (`{'`, `'.join(exp['dataset']['sources'])}`), "
+        ("- **Live mode:** FIRMS VIIRS **NRT** (S-NPP, NOAA-20), latest retrieval per day; 3 h publication lag "
+         "applied in features; recent outcomes pending. Days listed below are NRT outages.\n" if live else "")
+        + f"- **Detections:** NASA FIRMS VIIRS science-quality (`{'`, `'.join(exp['dataset']['sources'])}`), "
         "nominal/high confidence, clipped to India (geoBoundaries ADM1).\n"
         "- **Weather (M2 only):** NASA POWER / MERRA-2 daily, UTC, nearest ≈0.5° × 0.625° grid point.\n"
         f"- **Grid:** 0.1° cells. **Horizon:** {meta['horizon']}.\n"

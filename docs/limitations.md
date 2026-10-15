@@ -22,5 +22,10 @@ These are current, not hypothetical. Remove an item only when a test or document
 8. **Sensor outages.** Whole days with no detections for a source (e.g. VIIRS S-NPP, 2024-05-30..06-03)
    are excluded as label days. Trailing features *after* an outage still undercount activity
    (e.g. `fire_count_7d` on 2024-06-05 misses five days). Multi-sensor features would reduce this.
-9. **Not a warning system.** TerraSentinel supplements, and does not replace, official warnings
+9. **NRT is preliminary.** Near-real-time files fill in and can be revised for days after acquisition. The
+   live pipeline uses the latest retrieval of each day and assumes a 3 h publication lag, but true
+   per-detection publication times are not available from the API. The model was trained on
+   science-quality data. The NRT and SP archives do not overlap (NRT starts 2026-07-01, SP ends
+   2026-06-30), so the effect of the data product cannot be isolated.
+10. **Not a warning system.** TerraSentinel supplements, and does not replace, official warnings
    (IMD, NDMA, state forest departments).

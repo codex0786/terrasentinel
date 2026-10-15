@@ -63,6 +63,21 @@ cp .env.example .env   # then add FIRMS_MAP_KEY (free: https://firms.modaps.eosd
 Record each smoke-test result in `docs/data_provenance.md`. Fix the split dates in the protocol
 **before** fitting any model.
 
+## Live near-real-time mode
+
+```bash
+.venv/bin/python pipelines/live_update.py            # daily: fetch FIRMS NRT, score today with locked B1
+.venv/bin/python pipelines/evaluate_nrt.py           # B1 on final NRT days vs the same 2024 SP window
+```
+
+Each run re-fetches the last 3 days because NRT files keep filling in; every version is archived. The dashboard's
+**Live** mode shows today's predictions, data freshness, a stale-data warning after 30 h, and "pending" outcomes
+until each day has ended.
+
+Post-lock NRT check (not pre-registered), 2026-08-01..10-14 vs 2024-08-01..10-14 SP: B1 PR-AUC 0.749 vs 0.664 at
+similar prevalence (0.334 vs 0.328). The two archives do not overlap, so product, lag and year differences cannot be
+separated.
+
 ## Dashboard (research prototype)
 
 ```bash
