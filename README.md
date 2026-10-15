@@ -43,7 +43,7 @@ and [limitations](docs/limitations.md).
 ## Setup
 
 ```bash
-python3 -m venv .venv && .venv/bin/pip install -e '.[dev,geo]'
+python3 -m venv .venv && .venv/bin/pip install -e '.[dev,geo,earthdata]'
 cp .env.example .env   # then add FIRMS_MAP_KEY (free: https://firms.modaps.eosdis.nasa.gov/api/map_key/)
 .venv/bin/python -m pytest
 ```
