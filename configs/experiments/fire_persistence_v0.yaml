@@ -1,0 +1,32 @@
+# Fire persistence, baselines B-null / B0 / B1. Science-quality VIIRS (S-NPP + NOAA-20).
+# Dates, sensors, holdout states and alert budget agreed 2026-10-15 before any model was fit
+# (budget/holdout chosen from training-period population counts only). Do not tune them on results.
+experiment: fire_persistence_v0
+dataset:
+  sources: [VIIRS_SNPP_SP, VIIRS_NOAA20_SP]   # labels/features use both (both cover all of 2020-2024)
+  start: 2020-01-01      # first label day
+  end: 2024-12-31        # last label day
+  history_start: 2015-01-01   # S-NPP archive start used for B0
+split:
+  train_end: 2022-12-31   # train 2020-2022
+  val_end: 2023-12-31     # validate 2023; test 2024 (scored only after the protocol is LOCKED)
+  embargo_days: 7
+  # Never in training. Three regimes: eastern forest / crop residue (Punjab stays in training) /
+  # NE shifting cultivation. ~11.7% of training-period rows. Exact geoBoundaries spelling.
+  geographic_holdout: [Odisha, Haryāna, Mizoram]
+models:
+  seasonal: {n_years: 5, half_window_days: 15, history_sources: [VIIRS_SNPP_SP]}   # S-NPP only: 2015-2019 consistent
+  satellite_only_features:
+    - fire_count_1d
+    - fire_count_3d
+    - fire_count_7d
+    - fire_count_30d
+    - frp_sum_1d
+    - frp_sum_7d
+    - days_since_last_fire
+evaluation:
+  primary_metric: pr_auc
+  alert_budget:
+    fraction_per_day: 0.10   # primary operational metric: top 10% of each day's eligible cells
+    fixed_per_day: 100       # secondary; saturates in the monsoon (median 51-85 eligible cells/day Jul-Sep)
+  bootstrap: {n_boot: 2000, seed: 20261015, block: region_x_isoweek}

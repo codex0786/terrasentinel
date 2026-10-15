@@ -1,0 +1,28 @@
+# Study region and analysis grid.
+# The bounding box is a coarse request envelope for API queries only.
+# It includes parts of neighbouring countries; a proper India boundary
+# (administrative polygon) must be applied before any reporting. See docs/limitations.md.
+region:
+  name: india
+  bbox:            # west, south, east, north (decimal degrees, WGS84)
+    west: 68.0
+    south: 6.0
+    east: 98.0
+    north: 38.0
+  # Polygon layer of states/UTs, relative to TERRASENTINEL_DATA_DIR. Fill in after running
+  # pipelines/fetch_boundary.py (or point at another authoritative source).
+  # geoBoundaries gbOpen IND ADM1 (36 units; DataMeet / ECI; CC BY 2.5 IN), archived 2026-10-15.
+  boundary_file: raw/geoboundaries/IND_ADM1/47/47aa0acb6f69868daee49143276f3ce323f18905ba7d38d0a86816b405028736.geojson
+  boundary_name_field: shapeName   # geoBoundaries field holding the state/UT name
+
+grid:
+  # Regular lat/lon grid anchored at the bbox south-west corner.
+  # 0.1 deg matches GPM IMERG; revisit after the source audit.
+  resolution_deg: 0.1
+  origin_lon: 68.0
+  origin_lat: 6.0
+
+time:
+  # All stored timestamps are UTC. Local day boundaries for reporting use IST.
+  storage_tz: UTC
+  reporting_tz: Asia/Kolkata

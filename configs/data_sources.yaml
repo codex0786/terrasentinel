@@ -1,0 +1,45 @@
+# Source inventory. `status` records what has actually been verified for THIS project,
+# not what the provider advertises. Allowed: unverified | smoke_tested | ingested | validated.
+firms:
+  base_url: https://firms.modaps.eosdis.nasa.gov
+  area_endpoint: /api/area/csv/{map_key}/{source}/{area}/{day_range}/{date}
+  availability_endpoint: /api/data_availability/csv/{map_key}/{source}
+  auth: MAP_KEY (free) via env FIRMS_MAP_KEY
+  max_day_range: 5                 # per FIRMS API docs, checked 2026-10-15
+  rate_limit:
+    transactions_per_10min: 5000   # larger requests may count as several transactions
+    min_seconds_between_requests: 1.0
+  sources:
+    science:                       # use for retrospective experiments
+      - VIIRS_SNPP_SP
+      - VIIRS_NOAA20_SP
+      - MODIS_SP
+    nrt:                           # use for operational monitoring only
+      - VIIRS_SNPP_NRT
+      - VIIRS_NOAA20_NRT
+      - VIIRS_NOAA21_NRT
+      - MODIS_NRT
+  # Inclusive date ranges with no observations for a source, found during this project's audits.
+  # Label days in these ranges are excluded (pipelines/build_dataset.py).
+  known_outages:
+    VIIRS_SNPP_SP:
+      - ["2024-05-30", "2024-06-03"]   # 0 India detections/day; NOAA-20 and MODIS normal. Found 2026-10-15.
+  status: smoke_tested   # 2026-10-15: NRT + SP smoke tests passed; VIIRS_SNPP_SP 2024-03-01..05-31 ingested
+
+nasa_power:
+  base_url: https://power.larc.nasa.gov/api/temporal/daily/point
+  auth: none
+  status: unverified
+
+gpm_imerg:
+  access: earthaccess (Earthdata Login)
+  auth: env EARTHDATA_USERNAME / EARTHDATA_PASSWORD or ~/.netrc
+  status: unverified
+
+modis_mod13q1:
+  access: earthaccess (Earthdata Login)
+  status: unverified
+
+smap:
+  access: earthaccess (Earthdata Login)
+  status: unverified

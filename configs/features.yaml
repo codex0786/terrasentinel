@@ -1,0 +1,23 @@
+# Fire-persistence feature and label definitions (Workstream A).
+# All windows are TRAILING and end strictly before the prediction cutoff.
+prediction:
+  # A cell-date row for date D is scored at the cutoff (D 00:00 UTC + availability_lag).
+  # Only observations whose availability time <= cutoff may enter features.
+  availability_lag_hours:
+    science: 0      # retrospective experiments: assume archive availability (documented assumption)
+    nrt: 3          # FIRMS NRT nominal latency; to be measured in the source audit
+  horizon_days: 1   # label = any detection in cell on day D (the day being predicted)
+
+features:
+  trailing_count_windows_days: [1, 3, 7, 30]
+  days_since_last_cap: 365      # value used when no prior detection exists within history
+
+labels:
+  fire_persistence:
+    definition: >
+      Positive if at least one qualifying detection falls in the cell on UTC day D,
+      given at least one qualifying detection in the cell during D-1.
+      Population = cells with a detection on D-1 (persistence, not ignition).
+    min_confidence:
+      viirs: [nominal, high]
+      modis: 30
