@@ -25,7 +25,7 @@ export function TodaySummary({ day, entry, perf }: { day: Day; entry?: DayIndexE
         <div className="stat"><div className="v">{high.toLocaleString("en-IN")}</div><div className="k">high-chance areas</div></div>
       </div>
       <p className="small muted" style={{ margin: "10px 0 0" }}>
-        Each area is about 11 × 11 km. {highRate != null && <>In past tests, <b>{Math.round(highRate * 10)} in 10</b> areas marked high were still burning the next day.</>}
+        Each area is about 11 × 11 km. {highRate != null && <>In past tests, <b>{pct(highRate)}</b> of areas marked high were still burning the next day.</>}
         {entry?.outcomes_final && entry.high_burned_again != null && <> On this day, <b>{pct(entry.high_burned_again)}</b> of high areas burned again.</>}
       </p>
     </div>
