@@ -12,6 +12,7 @@ below. Provider documentation alone does not count. Machine-readable status live
 | MODIS MOD13Q1.061 | NDVI/EVI | Earthdata Login + earthaccess | 250 m, 16-day | unverified |
 | SMAP | Soil moisture | Earthdata Login + earthaccess | product-dependent | unverified |
 | geoBoundaries gbOpen IND ADM1 | State/UT polygons for clipping and regional reporting | No auth; `pipelines/fetch_boundary.py` | 36 units; source DataMeet / Election Commission of India; CC BY 2.5 IN; year represented 2011 (per API, 2026-10-15) | archived 2026-10-15 (sha256 47aa0acb…), 36 units, 0 invalid geometries; units reflect the post-2020 layout despite the 2011 metadata |
+| VNP64A1 v002 (VIIRS burned area) | Semi-independent validation (burn scars) | Earthdata Login via earthaccess (LP DAAC) | 500 m sinusoidal, monthly, burn day-of-year; HDF4 | 208 granules (16 tiles, Dec 2023–Dec 2024) archived 2026-10-15, 622 MB |
 | Independent event labels | Non-circular validation | TBD (state forest-fire reports, disaster records) | — | not yet identified |
 
 ## Raw archive

@@ -78,6 +78,14 @@ Post-lock NRT check (not pre-registered), 2026-08-01..10-14 vs 2024-08-01..10-14
 similar prevalence (0.334 vs 0.328). The two archives do not overlap, so product, lag and year differences cannot be
 separated.
 
+## Burned-area validation (secondary, pre-specified)
+
+Checked against VIIRS burned area (VNP64A1, burn scars from surface reflectance), the locked B1 predictions show
+lift over prevalence on 2024 test cells: PR-AUC 0.233 vs a prevalence of 0.074, CI [+0.123, +0.200]. The lift is
+smaller in held-out states (+0.030 [+0.006, +0.057]). Weather (M2) slightly *reduced* agreement. The two labels
+agree weakly (κ ≈ 0.1), because burned-area mapping misses many small fires. See
+[validation_burned_area.md](docs/validation_burned_area.md).
+
 ## Dashboard (research prototype)
 
 ```bash

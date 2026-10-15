@@ -22,7 +22,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest>=8", "ruff>=0.5"]
 geo = ["geopandas>=1.0", "shapely>=2.0", "pyproj>=3.6", "pyogrio>=0.7"]
-earthdata = ["earthaccess>=0.10", "xarray>=2024.1"]
+earthdata = ["earthaccess>=0.10", "xarray>=2024.1", "pyhdf>=0.11", "h5py>=3.10"]
 dashboard = ["streamlit>=1.38", "pydeck>=0.9"]
 
 [tool.setuptools.packages.find]
