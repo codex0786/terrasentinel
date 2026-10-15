@@ -86,6 +86,16 @@ smaller in held-out states (+0.030 [+0.006, +0.057]). Weather (M2) slightly *red
 agree weakly (κ ≈ 0.1), because burned-area mapping misses many small fires. See
 [validation_burned_area.md](docs/validation_burned_area.md).
 
+## Ground-reported check: Uttarakhand (secondary)
+
+Uttarakhand Forest Department division-wise totals for the 2026 season (600 incidents, 549 ha, as of 15 Oct)
+were mapped to 13 districts and compared with VIIRS detections over the same period. District rank correlations
+are moderate (Spearman ρ 0.47–0.56 for incidents or area vs detections or FRP) but **not significant** with 13
+units (permutation p 0.05–0.11). Satellites record about 18× more detections than reported forest incidents;
+agricultural districts such as Udham Singh Nagar and Hardwar have many detections and few forest incidents.
+This checks detections, not day-level predictions.
+[report](reports/experiment_summaries/uttarakhand_validation_20261015T1049.md)
+
 ## Dashboard (research prototype)
 
 ```bash

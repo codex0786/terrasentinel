@@ -1,0 +1,46 @@
+# Uttarakhand Forest Department divisions -> geoBoundaries ADM2 district (Uttarakhand has 13).
+# Written 2026-10-15 BEFORE comparing with any satellite counts. Divisions have no published
+# boundaries, so each is assigned to the district containing most of it / its headquarters.
+# multi: true marks divisions that clearly span several districts (excluded in the sensitivity check).
+divisions:
+  "DFO (S.C Uttarkashi)": {district: Uttarkashi}
+  "DFO (Tehri DAM 1)": {district: Tehri Garhwal}
+  "DFO (Tehri DAM 2)": {district: Tehri Garhwal}
+  "DFO (New Tehri)": {district: Tehri Garhwal}
+  "DFO Nainital": {district: Nainital}
+  "DFO Nainital Soil Conservation": {district: Nainital}
+  "DFO Ramnagar Soil Conservation": {district: Nainital}
+  "DFO Soil Conservation Ranikhet": {district: Almora}
+  "DFO Almora": {district: Almora}
+  "DFO Civil Soyam Almora": {district: Almora}
+  "DFO Bageshwar": {district: Bageshwar}
+  "DFO Pithoragarh": {district: Pithoragarh}
+  "DFO Champawat": {district: Champawat}
+  "DFO Haldwani": {district: Nainital}
+  "DFO Tarai central": {district: Udham Singh Nagar}
+  "DFO Tarai East": {district: Udham Singh Nagar, multi: true}        # also Nainital
+  "DFO Tarai West , Ramnagar": {district: Udham Singh Nagar, multi: true}  # also Nainital
+  "DFO Ramnagar , Ramnagar": {district: Nainital}
+  "DFO Narendra Nagar": {district: Tehri Garhwal}
+  "DFO Uttarkashi": {district: Uttarkashi}
+  "DFO Tons,Purola": {district: Uttarkashi}
+  "DFO Mussoorie": {district: Dehradun, multi: true}                  # also Tehri Garhwal
+  "DFO Chakrata": {district: Dehradun}
+  "DFO Upper Yamuna": {district: Uttarkashi}
+  "DFO Dehradun": {district: Dehradun}
+  "DFO Soil Conservation, kalsi": {district: Dehradun}
+  "DFO Lansdowne, kotdwaar": {district: Garhwal}
+  "DFO Soil Conservation , Lansdowne": {district: Garhwal}
+  "DFO Haridwar": {district: Hardwar}
+  "DFO Garhwal": {district: Garhwal}
+  "DFO Civil Soyam Pauri": {district: Garhwal}
+  "DFO Badrinath, Gopeshwar": {district: Chamoli}
+  "DFO Alaknanda Soil Conservation,Gopeshwar": {district: Chamoli}
+  "DFO Rudraprayag , Rudraprayag": {district: Rudraprayag}
+  "Dy. Director (Raja ji NP)": {district: Dehradun, multi: true}      # also Hardwar, Garhwal
+  "Dy. Director (Kalagarh TR/ Division)": {district: Garhwal}
+  "Dy. Director (Corbett TR/ Division)": {district: Nainital, multi: true}  # also Garhwal
+  "DCF - NDNP": {district: Chamoli}                                   # Nanda Devi NP
+  "DCF - KedarNath WL Division": {district: Chamoli, multi: true}     # also Rudraprayag
+  "Deputy Director Govind Wildlife Sanctuary": {district: Uttarkashi}
+  "Gangotri National Park": {district: Uttarkashi, multi: true}       # also Chamoli? mostly Uttarkashi
