@@ -47,3 +47,13 @@ modis_mod13q1:
 smap:
   access: earthaccess (Earthdata Login)
   status: unverified
+
+geoboundaries:
+  # Commit-pinned files used by the study; fetch_boundary.py --pinned downloads these and checks the sha256.
+  pinned:
+    ADM1:
+      url: https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/IND/ADM1/geoBoundaries-IND-ADM1.geojson
+      sha256: 47aa0acb6f69868daee49143276f3ce323f18905ba7d38d0a86816b405028736
+    ADM2:
+      url: https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/IND/ADM2/geoBoundaries-IND-ADM2.geojson
+      sha256: 8bef6929fd65432e7dc775e7c44473e84efff064ebddbfd6b834e6291546db40

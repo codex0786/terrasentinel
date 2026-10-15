@@ -13,8 +13,8 @@ import json
 
 import requests
 
-from terrasentinel.config import data_dir
-from terrasentinel.ingestion.archive import RawArchive
+from terrasentinel.config import data_dir, load_yaml
+from terrasentinel.ingestion.archive import RawArchive, sha256_bytes
 from terrasentinel.ingestion.http import fetch_with_retry
 
 API = "https://www.geoboundaries.org/api/current/gbOpen/IND/{level}/"
@@ -24,7 +24,19 @@ def main() -> None:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--level", default="ADM1", choices=["ADM0", "ADM1", "ADM2"])
     p.add_argument("--simplified", action="store_true", help="use the simplified geometry (smaller, coarser)")
+    p.add_argument("--pinned", action="store_true",
+                   help="download the study's commit-pinned file and verify its sha256 (used by the daily job)")
     args = p.parse_args()
+
+    if args.pinned:
+        pin = load_yaml("data_sources.yaml")["geoboundaries"]["pinned"][args.level]
+        content = fetch_with_retry(pin["url"], timeout_s=300)
+        if sha256_bytes(content) != pin["sha256"]:
+            raise SystemExit(f"{args.level}: downloaded file does not match the pinned sha256; refusing to use it")
+        rec = RawArchive(data_dir() / "raw").store("geoboundaries", f"IND_{args.level}", content,
+                                                   {"url": pin["url"], "pinned": True}, suffix=".geojson")
+        print(f"Pinned {args.level} verified and archived -> data/raw/{rec.path}")
+        return
 
     meta = requests.get(API.format(level=args.level), timeout=60)
     meta.raise_for_status()

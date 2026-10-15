@@ -1,0 +1,60 @@
+name: site
+# Daily data refresh + build + deploy of the public site to GitHub Pages.
+# Needs: repository secret FIRMS_MAP_KEY; Settings -> Pages -> Source: "GitHub Actions".
+on:
+  schedule:
+    - cron: "30 6,18 * * *"     # twice daily (UTC), after the night and day VIIRS passes over India
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["site/**", "pipelines/**", "src/**", "configs/**", ".github/workflows/pages.yml"]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -e '.[geo]'
+      - name: Study boundary (commit-pinned, sha256-checked)
+        run: python pipelines/fetch_boundary.py --pinned --level ADM1
+      - name: Fetch FIRMS NRT and score with the frozen model
+        env:
+          FIRMS_MAP_KEY: ${{ secrets.FIRMS_MAP_KEY }}
+        run: python pipelines/live_update.py
+      - name: Export static site data
+        run: python pipelines/export_site_data.py
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - name: Build site
+        working-directory: site
+        run: npm ci && npm run build
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: site/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

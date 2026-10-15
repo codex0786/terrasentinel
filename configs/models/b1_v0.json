@@ -1,0 +1,164 @@
+{
+  "schema": "terrasentinel.frozen_logistic.v1",
+  "name": "B1_satellite_only",
+  "features": [
+    "fire_count_1d",
+    "fire_count_3d",
+    "fire_count_7d",
+    "fire_count_30d",
+    "frp_sum_1d",
+    "frp_sum_7d",
+    "days_since_last_fire"
+  ],
+  "log1p": [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+  ],
+  "impute_median": [
+    1.0,
+    3.0,
+    4.0,
+    11.0,
+    5.370000123977661,
+    15.72000002861023,
+    0.6506944444444445
+  ],
+  "scaler_mean": [
+    1.1408919309484384,
+    1.5344784685432955,
+    1.916276919002709,
+    2.622796400772541,
+    2.0717165076318995,
+    3.028517703730144,
+    0.386938118434108
+  ],
+  "scaler_scale": [
+    0.6364985301008528,
+    0.9118796259140552,
+    1.1172374515494254,
+    1.3494203351643925,
+    1.1262518888816524,
+    1.526348045891093,
+    0.17753800280227758
+  ],
+  "coef": [
+    0.10705893402790331,
+    0.340842415541797,
+    0.9052136729335545,
+    0.2629071750935626,
+    0.02160642509185951,
+    -0.2907651676402862,
+    -0.1830739088573736
+  ],
+  "intercept": -0.5047690346164518,
+  "model_id": "fire_persistence_v0/B1",
+  "horizon": "next UTC day; cells with a detection on the previous day",
+  "trained_on": "2020-01-01..2022-12-31 (VIIRS S-NPP + NOAA-20 SP), held-out states excluded",
+  "training_rows_sha256": "01670e4a60c24ccace72e088ea731e54d8455765292cbabecc18d056a944b42d",
+  "experiment_config_sha256": "cbd5479666d4d9be76a08dc193b7a56dc91e95359e89795c15073e727e5cce8d",
+  "protocol_lock_commit": "e0c9385",
+  "frozen_at_commit": "b3f9a38",
+  "bands": [
+    {
+      "band": "low",
+      "p_min": 0.0,
+      "p_max": 0.3
+    },
+    {
+      "band": "medium",
+      "p_min": 0.3,
+      "p_max": 0.6
+    },
+    {
+      "band": "high",
+      "p_min": 0.6,
+      "p_max": 1.0
+    }
+  ],
+  "band_performance": {
+    "val": [
+      {
+        "band": "low",
+        "p_min": 0.0,
+        "p_max": 0.3,
+        "cell_days": 155542,
+        "share": 0.5293352935571255,
+        "observed_rate": 0.16841753352792171
+      },
+      {
+        "band": "medium",
+        "p_min": 0.3,
+        "p_max": 0.6,
+        "cell_days": 79852,
+        "share": 0.27174963586120526,
+        "observed_rate": 0.4596753994890547
+      },
+      {
+        "band": "high",
+        "p_min": 0.6,
+        "p_max": 1.0,
+        "cell_days": 58450,
+        "share": 0.19891507058166918,
+        "observed_rate": 0.7711548331907613
+      }
+    ],
+    "test": [
+      {
+        "band": "low",
+        "p_min": 0.0,
+        "p_max": 0.3,
+        "cell_days": 146458,
+        "share": 0.523709570721067,
+        "observed_rate": 0.17321689494599135
+      },
+      {
+        "band": "medium",
+        "p_min": 0.3,
+        "p_max": 0.6,
+        "cell_days": 77291,
+        "share": 0.27637982514169246,
+        "observed_rate": 0.44067226455861613
+      },
+      {
+        "band": "high",
+        "p_min": 0.6,
+        "p_max": 1.0,
+        "cell_days": 55906,
+        "share": 0.19991060413724052,
+        "observed_rate": 0.7398311451364791
+      }
+    ],
+    "geo_test": [
+      {
+        "band": "low",
+        "p_min": 0.0,
+        "p_max": 0.3,
+        "cell_days": 13440,
+        "share": 0.46252322940326246,
+        "observed_rate": 0.2148809523809524
+      },
+      {
+        "band": "medium",
+        "p_min": 0.3,
+        "p_max": 0.6,
+        "cell_days": 8238,
+        "share": 0.2835019615940533,
+        "observed_rate": 0.46576839038601603
+      },
+      {
+        "band": "high",
+        "p_min": 0.6,
+        "p_max": 1.0,
+        "cell_days": 7380,
+        "share": 0.25397480900268427,
+        "observed_rate": 0.7547425474254743
+      }
+    ]
+  },
+  "sha256": "16de215f3b3597b83cc12670fb4e4e28f3fb3c6ef9437666b1b4639e9cbd58a8"
+}

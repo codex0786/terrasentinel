@@ -4,22 +4,20 @@
     python pipelines/live_update.py --first 2026-07-01   # backfill the whole NRT archive window
 
 Writes data/live/live_scores.parquet and data/live/live_meta.json.
-The model is the locked B1 specification fit on the study's training rows (2020-2022, SP data);
-it is applied to NRT data unchanged.
+The model is the frozen locked B1 (configs/models/b1_v0.json, fit on the study's 2020-2022 training rows and
+verified equal to the study scores). It is applied to NRT data unchanged and needs no training data.
 """
 
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 from datetime import UTC, date, datetime, timedelta
 
 import pandas as pd
-import yaml
 
 from terrasentinel.config import REPO_ROOT, data_dir, load_dotenv, load_yaml, require_env
-from terrasentinel.experiments.fire_persistence import assign_sets, prepare_detections
+from terrasentinel.experiments.fire_persistence import prepare_detections
 from terrasentinel.features.trailing import build_trailing_features
 from terrasentinel.geospatial.boundary import cell_regions, load_boundary
 from terrasentinel.geospatial.grid import Grid
@@ -27,22 +25,24 @@ from terrasentinel.ingestion.archive import RawArchive
 from terrasentinel.ingestion.firms import BBox, FirmsClient
 from terrasentinel.labels.persistence import build_persistence_rows, find_unobserved_days
 from terrasentinel.live.nrt import NRT_SOURCES, fetch_nrt, label_final, load_nrt
-from terrasentinel.models.baselines import LogisticModel
+from terrasentinel.models.frozen import FrozenLogistic
 
-EXPERIMENT = REPO_ROOT / "configs" / "experiments" / "fire_persistence_v0.yaml"
+MODEL = REPO_ROOT / "configs" / "models" / "b1_v0.json"
 HISTORY_DAYS = 31   # features need 30 days of trailing history before the first scored day
 
 
 def main() -> None:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--first", type=date.fromisoformat, help="first day to fetch (default: today - 36 days)")
+    p.add_argument("--first", type=date.fromisoformat,
+                   help="first day to fetch (default: enough history for --scored-days scored days)")
+    p.add_argument("--scored-days", type=int, default=30, help="days to score when --first is not given")
     p.add_argument("--refresh-days", type=int, default=3, help="always re-fetch this many most recent days")
     p.add_argument("--no-fetch", action="store_true", help="rebuild from the archive without downloading")
     args = p.parse_args()
 
     now = datetime.now(UTC)
     today = now.date()
-    first = args.first or today - timedelta(days=HISTORY_DAYS + 5)
+    first = args.first or today - timedelta(days=HISTORY_DAYS + args.scored_days - 1)
     india = load_yaml("india.yaml")
     region = india["region"]
     feats = load_yaml("features.yaml")
@@ -73,12 +73,7 @@ def main() -> None:
     fallback = det.groupby("cell_id")["region"].agg(lambda s: s.mode().iloc[0])
     rows["cell_region"] = rows["cell_region"].fillna(rows["cell_id"].map(fallback))
 
-    # Locked B1 specification, fit on the study's training rows only.
-    cfg = yaml.safe_load(EXPERIMENT.read_text())
-    study_rows_path = data_dir() / "processed" / cfg["experiment"] / "rows.parquet"
-    study = pd.read_parquet(study_rows_path)
-    train = study[assign_sets(study, cfg["split"]) == "train"]
-    b1 = LogisticModel(cfg["models"]["satellite_only_features"]).fit(train)
+    b1 = FrozenLogistic.load(MODEL)               # locked B1, frozen and hash-checked
     rows["p_B1"] = b1.predict(rows).astype("float32") if len(rows) else []
 
     rows["label_final"] = [label_final(d.date(), now, lag) for d in rows["date"]]
@@ -98,8 +93,8 @@ def main() -> None:
         "window": [first.isoformat(), today.isoformat()],
         "scored_days": [start.isoformat(), today.isoformat()],
         "nrt_lag_hours": lag,
-        "model": "B1 (locked specification), fit on study training rows 2020-2022 (SP)",
-        "training_rows_sha256": hashlib.sha256(study_rows_path.read_bytes()).hexdigest(),
+        "model": b1.spec["model_id"],
+        "model_sha256": b1.spec["sha256"],
         "latest_acquisition_utc": {s: t.isoformat() for s, t in latest_acq.items()},
         "last_retrieval_utc": inventory.groupby("source")["retrieved_at_utc"].max().to_dict() if len(inventory) else {},
         "unobserved_days": [d.date().isoformat() for d in unobserved],
