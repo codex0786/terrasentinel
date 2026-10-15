@@ -63,6 +63,19 @@ cp .env.example .env   # then add FIRMS_MAP_KEY (free: https://firms.modaps.eosd
 Record each smoke-test result in `docs/data_provenance.md`. Fix the split dates in the protocol
 **before** fitting any model.
 
+## Dashboard (research prototype)
+
+```bash
+.venv/bin/pip install -e '.[dashboard]'
+.venv/bin/python pipelines/score.py --experiment configs/experiments/fire_persistence_v0.yaml
+.venv/bin/streamlit run app/dashboard/app.py --server.port 8502
+```
+
+For any UTC day from 2020 to 2024 it shows observed VIIRS detections (orange) and next-day persistence
+predictions (blue circles, red outline = top 10% flagged). It labels whether the day is in-sample, validation
+or locked test. Outcomes stay hidden until you reveal them, and outage days show no predictions. It is
+not an emergency warning service.
+
 ## Principles
 
 - Raw data are immutable. Derived data are reproducible from the manifest and config.
