@@ -73,7 +73,7 @@ def run(rows: pd.DataFrame, *, include_test: bool = False, protocol_path: Path |
                              **{f"{k.split('_')[0]}_roc_auc": roc_auc(g["label"], g[k]) for k in models}})
     counts = rows.groupby("set")["label"].agg(["size", "sum", "mean"])
     if not include_test:
-        hidden = counts.index == "test"
+        hidden = counts.index.isin(["test", "embargo"])   # embargo rows border the test period
         counts["sum"] = counts["sum"].astype("Int64").mask(hidden)
         counts["mean"] = counts["mean"].mask(hidden)
     return {"metrics": pd.DataFrame(metrics), "comparisons": pd.DataFrame(comps), "per_year": pd.DataFrame(per_year),

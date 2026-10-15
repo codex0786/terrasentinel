@@ -71,3 +71,11 @@ at each boundary.
 - IMD's "heavy rain" events are partly defined from rain gauges: independent of satellite rainfall, but not of
   rainfall itself.
 - A state-level unit is coarse; one large state can contain both flooded and dry areas on the same day.
+
+## Change log
+
+| Date | Change |
+|---|---|
+| 2026-10-15 | Draft agreed (state × day, same-day detection, ROC-AUC primary); pushed publicly before any rainfall result. |
+| 2026-10-15 | Data audit: IMERG 2001–2024 complete (8,766 days, 0 missing). Seven daily maxima above 1,000 mm all fall over sea (cyclones). Dataset: 105,184 state-days in 32 states (3 units with fewer than 10 cells excluded), 2,566 positives; 132 events over 30 days excluded; 0 unmatched state names. |
+| 2026-10-15 | Development run, validation 2020 only: ROC-AUC B0 0.804, B1 0.713, M1 0.857; M1 − B0 +0.053 [+0.021, +0.089]. PR-AUC M1 0.066 vs B0 0.065 (prevalence 0.017). **Deviation:** the report showed label counts for the 7-day embargo rows (3 events), part of which border the test period. Those counts are now withheld as well. No test-period rows were scored. Nothing was changed in response. |
