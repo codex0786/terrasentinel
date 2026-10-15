@@ -1,0 +1,14 @@
+# IFI-Impacts state names -> geoBoundaries ADM1 shapeName. Names not listed are matched after removing
+# accents, case and punctuation. Fixed 2026-10-15 before any rainfall-event comparison.
+aliases:
+  "Jammu & Kashmir": "Jammu and Kashmīr"
+  "Jammu and Kashmir": "Jammu and Kashmīr"
+  "Dadra & Nagar Haveli": "Dādra and Nagar Haveli and Damān and Diu"
+  "Dadra and Nagar Haveli": "Dādra and Nagar Haveli and Damān and Diu"
+  "Dadar&Nagar Haveli": "Dādra and Nagar Haveli and Damān and Diu"
+  "Daman & Diu": "Dādra and Nagar Haveli and Damān and Diu"
+  "Daman and Diu": "Dādra and Nagar Haveli and Damān and Diu"
+  "New Delhi": "Delhi"
+  "NCT of Delhi": "Delhi"
+  "Orissa": "Odisha"
+  "Pondicherry": "Puducherry"
